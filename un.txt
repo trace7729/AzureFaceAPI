@@ -1,0 +1,172 @@
+import numpy as np
+import cv2
+import pickle
+import os
+import glob
+import time
+from random import randint
+
+from azure.cognitiveservices.vision.face import FaceClient
+from msrest.authentication import CognitiveServicesCredentials
+from azure.cognitiveservices.vision.face.operations import FaceOperations
+
+from face_try import first_label,person_idList, person_nameList
+
+KEY = os.environ['FACE_SUBSCRIPTION_KEY']
+ENDPOINT = os.environ['FACE_ENDPOINT']
+PERSON_GROUP_ID = "my-unique-person-group"
+face_client = FaceClient(ENDPOINT, CognitiveServicesCredentials(KEY))
+final_name=""
+'''
+Identify a face against a defined PersonGroup
+'''
+
+'''
+# Group image for testing against 
+my_image = 'my-image.jpg'
+IMAGES_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)))
+# Get test image
+test_image_array = glob.glob(os.path.join(IMAGES_FOLDER, my_image))
+print(len(test_image_array))
+image = open(test_image_array[0], 'r+b')
+
+# Detect faces
+face_ids = []
+faces = face_client.face.detect_with_stream(image)
+
+for face in faces:
+    face_ids.append(face.face_id)
+
+results = face_client.face.identify(face_ids, PERSON_GROUP_ID)
+streaming = face_client.face.detect_with_stream
+print('Identifying faces in {}'.format(os.path.basename(image.name)))
+if not results:
+    print('No person identified in the person group for faces from {}.'
+	.format(os.path.basename(image.name)))
+for person in results:
+	print(person)
+	print('Person for face ID {} is identified in {} with a confidence of {}.'.format(person.face_id, os.path.basename(image.name), person.candidates[0].confidence))
+	for index, id in enumerate(person_idList):
+		if len(id) == 0:
+			pass
+		else:
+			compare = face_client.face.verify_face_to_person(person.face_id,id,PERSON_GROUP_ID)
+			compare = face_client.face.verify_face_to_person(person.face_id,id,PERSON_GROUP_ID)
+			if compare.is_identical:
+				if compare.confidence >= 0.45 and compare.confidence <= 0.85:
+					print(index)
+					getpp = face_client.person_group_person.get(PERSON_GROUP_ID, person_idList[index])
+					print(getpp.name)
+					break
+'''
+
+face_cascade = cv2.CascadeClassifier('cascades/data/haarcascade_frontalface_alt2.xml')
+recognizer = cv2.face.LBPHFaceRecognizer_create()
+recognizer.read("trainner.yml")
+
+labels = {}
+img_item=""
+images_list = []
+with open("labels.pickle", 'rb') as f: # reading bytes, openning labels
+	og_labels = pickle.load(f)
+	labels = {v:k for k,v in og_labels.items()}
+
+cap = cv2.VideoCapture(0)
+
+last_recorded_time = time.time()
+while(True):
+	curr_time = time.time()
+	ret, frame = cap.read()
+	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)#convert the cascade to gray
+	faces_1 = face_cascade.detectMultiScale(gray, scaleFactor=1.5, minNeighbors=5)
+		
+	for (x, y, w, h) in faces_1:
+		#print(x, y, w, h)
+		#roi_gray = gray[y:y+h, x:x+w]#(ycord_start, ycord_end)
+		#roi_color = frame[y:y+h, x:x+w]
+		#print(type(roi_gray))
+		# recongnize
+		
+		#img_item = "my-image.jpg"
+		#cv2.imwrite(img_item, roi_gray) # write image
+		
+		color = (255, 0, 0) #BGR 0-255
+		stroke = 2
+		end_cord_x = x+w
+		end_cord_y = y+h
+		cv2.rectangle(frame, (x,y), (end_cord_x, end_cord_y), color, stroke)
+		#id_, conf = recognizer.predict(roi_gray)
+		#face_ids = []
+		#font = cv2.FONT_HERSHEY_SIMPLEX
+		#name = final_name
+		#color = (255, 255, 255)
+		#stroke = 2
+		#cv2.putText(frame, name, (x,y), font, 1, color, stroke, cv2.LINE_AA)
+		#font = cv2.FONT_HERSHEY_SIMPLEX
+		#name = final_name
+		#color = (255, 255, 255)
+		#stroke = 2
+		#cv2.putText(frame, name, (x,y), font, 1, color, stroke, cv2.LINE_AA)
+		#color = (255, 0, 0) #BGR 0-255
+		#stroke = 2
+		#end_cord_x = x+w
+		#end_cord_y = y+h
+		#cv2.rectangle(frame, (x,y), (end_cord_x, end_cord_y), color, stroke)
+		if curr_time - last_recorded_time >= 5.0:
+			#rannum = str(randint(0,100))
+			img_item = "my-image.jpg"
+			cv2.imwrite(img_item,frame) # write image
+			last_recorded_time = curr_time	
+			#####
+			'''
+			Identify a face against a defined PersonGroup
+			'''
+			IMAGES_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)))
+			# Get test image
+			test_image_array = glob.glob(os.path.join(IMAGES_FOLDER, img_item))
+			#print(len(test_image_array))
+			image = open(test_image_array[0], 'r+b')
+			# Detect faces
+			face_ids = []
+			faces = face_client.face.detect_with_stream(image)
+			
+			for face in faces:
+				face_ids.append(face.face_id)
+				
+			results = face_client.face.identify(face_ids, PERSON_GROUP_ID)
+		
+			print('Identifying faces in {}'.format(os.path.basename(image.name)))
+			if not results:
+				print('No person identified in the person group for faces from {}.'
+				.format(os.path.basename(image.name)))
+			####
+			for person in results:
+				print(person)
+				print('Person for face ID {} is identified in {} with a confidence of {}.'.format(person.face_id, os.path.basename(image.name), person.candidates[0].confidence))
+				for index, id in enumerate(person_idList):
+					if len(id) == 0:
+						pass
+					else:
+						#compare = face_client.face.verify_face_to_person(person.face_id,id,PERSON_GROUP_ID)
+						compare = face_client.face.verify_face_to_person(person.face_id,id,PERSON_GROUP_ID)
+						if compare.is_identical:
+							if compare.confidence >= 0.45 and compare.confidence <= 0.85:
+								#print(index)
+								getpp = face_client.person_group_person.get(PERSON_GROUP_ID, person_idList[index])
+								final_name = getpp.name
+								break
+		name = final_name
+		color = (255, 255, 255)
+		stroke = 2
+		font = cv2.FONT_HERSHEY_SIMPLEX
+		cv2.putText(frame, name, (x,y), font, 1, color, stroke, cv2.LINE_AA)
+	cv2.imshow('frame', frame)
+	
+	if cv2.waitKey(20) & 0xFF == ord('q'):
+		break
+
+
+
+
+cap.release()
+cv2.destroyAllWindows()
